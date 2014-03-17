@@ -1,3 +1,4 @@
+
 require 'pry'
 
 class Card
@@ -84,12 +85,10 @@ class Hand
   end
 
   def bust?
-    @score = calculate
     @score > 21
   end
 
   def blackjack?
-    @score = calculate
     @score == 21
   end
 end
@@ -148,7 +147,7 @@ class Game
     dealer_hand.receive_cards(deck)
     player_hand.receive_cards(deck)
     dealer_hand.receive_cards(deck)
-    puts "                                  Dealing                                    "
+    puts "Dealing".center(75)
     separation
     player.show_cards(player_hand)
     dealer_hand.hide_card
@@ -196,7 +195,6 @@ class Game
       if dealer_hand.bust? == true
         puts "Dealer busted."
         win
-        puts
       else
         dealer_turn
       end
@@ -282,9 +280,6 @@ class Game
 end
 
 Game.new.play
-
-
-
 
 
 
