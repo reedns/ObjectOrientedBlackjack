@@ -19,7 +19,7 @@ class Deck
   def initialize(number)
     @cards = [] 
     ["Hearts", "Diamonds", "Spades", "Clubs"].each do |suit|
-      ["2", "3", "4", "5", "6", "7", "8", "9", "10", 'Jack', 'Queen', 'King', 'Ace'].each do |value|
+      ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Queen", "King", "Ace"].each do |value|
         @cards << Card.new(suit, value)
       end
     end
@@ -55,6 +55,14 @@ class Hand
     puts cards_in_hand
   end
 
+  def hide_card
+    @card_showing = cards_in_hand[1]
+    puts "Dealer's hand:"
+    puts "??????"
+    puts "#{@card_showing.to_s}"
+    puts "Score => ??"
+  end
+
   def calculate
     @values = cards_in_hand.map { |card| card.value }
 
@@ -72,7 +80,7 @@ class Hand
     if @score > 21 && values.include?('Ace')
       @score -= 10
     end
-    @score
+    score
   end
 
   def bust?
@@ -100,20 +108,7 @@ class Player
   def show_cards(hand)
     puts "#{name}'s hand:"
     puts "#{hand.to_s}Score => #{hand.calculate}"
-    puts
-  end
-
-end
-
-class Dealer < Player
-  attr_accessor :name
-  
-  def initialize
-    @name = "Dealer"
-  end
-
-  def hide_card(hand)
-
+    puts "=============================================================================="
   end
 end
 
@@ -122,7 +117,7 @@ class Game
 
   def initialize
     @player = Player.new(get_name)
-    @dealer = Dealer.new
+    @dealer = Player.new("Dealer")
     @deck = Deck.new(get_decks)
   end
 
@@ -142,6 +137,10 @@ class Game
     decks
   end
 
+  def separation
+    puts "==============================================================================" 
+  end
+
   def deal_cards
     @player_hand = Hand.new
     @dealer_hand = Hand.new
@@ -149,53 +148,42 @@ class Game
     dealer_hand.receive_cards(deck)
     player_hand.receive_cards(deck)
     dealer_hand.receive_cards(deck)
-    puts "__________________________________Dealing_____________________________________"
+    puts "                                  Dealing                                    "
+    separation
     player.show_cards(player_hand)
-    dealer.show_cards(dealer_hand)
+    dealer_hand.hide_card
+    separation
   end
 
   def win
     puts "Congratulations! You won!"
+    separation
+    play_again
   end
 
   def lose
     puts "Sorry! You lost."
+    separation
+    play_again
   end
 
   def push
     puts "Push..."
-  end
-
-  def blackjack_check(hand1, hand2)
-    if hand1.blackjack? == true && hand2.blackjack? == false
-      puts "Blackjack!"
-      win
-      puts
-      play_again
-    elsif hand1.blackjack? == false && hand2.blackjack? == true
-      puts "Dealer got blackjack."
-      lose
-      puts
-      play_again
-    elsif hand1.blackjack? == true && hand2.blackjack? == true
-      push
-      puts
-      play_again
-    else
-      hit_or_stay
-    end
+    separation
+    play_again
   end
 
   def compare_hands
+    puts "Final Hands:"
+    puts
+    puts player.show_cards(player_hand)
+    puts dealer.show_cards(dealer_hand)
     if player_hand.calculate > dealer_hand.calculate
       puts win
-      play_again
     elsif player_hand.calculate < dealer_hand.calculate
       puts lose
-      play_again
     else 
       puts push
-      play_again
     end 
   end
 
@@ -203,19 +191,18 @@ class Game
     if dealer_hand.calculate < 17
       dealer.hit(dealer_hand, deck) 
       puts "Dealer hits..."
+      puts
       dealer.show_cards(dealer_hand)
       if dealer_hand.bust? == true
         puts "Dealer busted."
         win
         puts
-        play_again
       else
         dealer_turn
       end
     else
       puts "Dealer stays..."
-      dealer.show_cards(dealer_hand)
-      compare_hands
+      separation
     end
   end
 
@@ -230,12 +217,12 @@ class Game
 
     if move == "hit"
       player.hit(player_hand, deck)
+      separation
       player.show_cards(player_hand)
       if player_hand.bust? == true
         puts "You busted." 
         lose
         puts
-        play_again
       end
 
       if player_hand.calculate < 21
@@ -243,13 +230,13 @@ class Game
       end
 
       if player_hand.blackjack? == true
+        puts
         dealer_turn
       end
     end
     
     if move == "stay"
-      player.show_cards(player_hand)
-      dealer_turn
+      separation
     end
   end
 
@@ -267,7 +254,6 @@ class Game
       @play = true
       play
     else
-      @play = false
       exit
     end
   end
@@ -276,20 +262,26 @@ class Game
     @play = true
     while @play == true
       deal_cards
-      #binding.pry
-      blackjack_check(player_hand, dealer_hand)
-      hit_or_stay 
-      dealer_turn
+      if player_hand.blackjack? == true
+        puts "Blackjack!"
+        win
+      else
+        hit_or_stay
+      end 
+
+      if dealer_hand.blackjack? == true
+        dealer.show_cards(dealer_hand)
+        puts "Dealer got blackjack."
+        lose
+      else
+        dealer_turn
+      end
       compare_hands   
     end 
   end  
-
-
 end
 
-blackjack = Game.new
-
-blackjack.play
+Game.new.play
 
 
 
