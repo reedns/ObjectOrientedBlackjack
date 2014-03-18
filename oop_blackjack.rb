@@ -19,7 +19,7 @@ class Deck
   def initialize(number)
     @cards = [] 
     ["Hearts", "Diamonds", "Spades", "Clubs"].each do |suit|
-      ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "Queen", "King", "Ace"].each do |value|
+      ["2", "3", "4", "5", "6", "7", "8", "9", "10", "Jack", "Queen", "King", "Ace"].each do |value|
         @cards << Card.new(suit, value)
       end
     end
@@ -95,16 +95,19 @@ class Player
   end
 
   def bust?
-    score > 21
+    score > Game::BLACKJACK_AMOUNT
   end
 
   def blackjack?
-    score == 21
+    score == Game::BLACKJACK_AMOUNT
   end
 end
 
 class Game
   attr_accessor :player, :dealer, :deck, :player_hand, :dealer_hand
+
+  BLACKJACK_AMOUNT = 21
+  DEALER_HIT_MINIMUM = 17
 
   def initialize
     @player = Player.new(get_name)
@@ -162,38 +165,6 @@ class Game
     play_again
   end
 
-  def compare_hands
-    puts "Final Hands:"
-    puts
-    puts player.show_cards
-    puts dealer.show_cards
-    if player.calculate > dealer.calculate
-      puts win
-    elsif player.calculate < dealer.calculate
-      puts lose
-    else 
-      puts push
-    end 
-  end
-
-  def dealer_turn
-    if dealer.calculate < 17
-      dealer.receive_cards(deck) 
-      puts "Dealer hits..."
-      puts
-      dealer.show_cards
-      if dealer.bust? == true
-        puts "Dealer busted."
-        win
-      else
-        dealer_turn
-      end
-    else
-      puts "Dealer stays..."
-      separation
-    end
-  end
-
   def hit_or_stay
     puts "Would you like to hit or stay?"
     move = gets.chomp
@@ -213,7 +184,7 @@ class Game
         puts
       end
 
-      if player.calculate < 21
+      if player.calculate < BLACKJACK_AMOUNT
         hit_or_stay
       end
 
@@ -226,6 +197,38 @@ class Game
     if move == "stay"
       separation
     end
+  end
+
+  def dealer_turn
+    if dealer.calculate < DEALER_HIT_MINIMUM
+      dealer.receive_cards(deck) 
+      puts "Dealer hits..."
+      puts
+      dealer.show_cards
+      if dealer.bust? == true
+        puts "Dealer busted."
+        win
+      else
+        dealer_turn
+      end
+    else
+      puts "Dealer stays..."
+      separation
+    end
+  end
+
+  def compare_hands
+    puts "Final Hands:"
+    puts
+    puts player.show_cards
+    puts dealer.show_cards
+    if player.calculate > dealer.calculate
+      puts win
+    elsif player.calculate < dealer.calculate
+      puts lose
+    else 
+      puts push
+    end 
   end
 
   def play_again
