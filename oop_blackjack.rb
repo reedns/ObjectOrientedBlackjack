@@ -1,5 +1,46 @@
 require 'pry'
 
+module Hand
+  attr_accessor :hand, :values, :score
+
+  def receive_cards(deck)
+    @hand << deck.deal
+  end
+
+  def show_cards
+    puts "#{name}'s hand:"
+    puts "#{to_s}Score => #{calculate}"
+  end
+
+  def to_s
+    puts hand
+  end
+
+  def calculate
+    @values = hand.map { |card| card.value }
+
+    @score = 0
+    values.each do |value|
+      if value == 'Ace'
+        @score += 11
+      elsif value.to_i == 0
+        @score += 10
+      else
+        @score += value.to_i
+      end
+    end
+
+    if @score > 21 && values.include?('Ace')
+      @score -= 10
+    end
+    score
+  end
+
+  def bust?
+    score > Game::BLACKJACK_AMOUNT
+  end
+end
+
 class Card
   attr_accessor :suit, :value
   
@@ -40,30 +81,26 @@ class Deck
   end
 end
 
+
+
 class Player
-  attr_accessor :name, :hand, :values, :score
+  attr_accessor :name, :hand
+  include Hand
 
   def initialize(name)
     @name = name
     @hand = []
   end
 
-  def receive_cards(deck)
-    hand << deck.deal
-  end
+end
 
-  def to_s
-    puts hand
-  end
+class Dealer
+  attr_accessor :name, :hand
+  include Hand
 
-  def discard
-    hand.pop until hand == []
-  end
-
-  def show_cards
-    puts "#{name}'s hand:"
-    puts "#{to_s}Score => #{calculate}"
-    puts "=============================================================================="
+  def initialize
+    @name = "Dealer"
+    @hand = []
   end
 
   def hide_card
@@ -73,35 +110,8 @@ class Player
     puts "#{@card_showing.to_s}"
     puts "Score => ??"
   end
-
-  def calculate
-    @values = hand.map { |card| card.value }
-
-    @score = 0
-    values.each do |value|
-      if value == 'Ace'
-        @score += 11
-      elsif value.to_i == 0
-        @score += 10
-      else
-        @score += value.to_i
-      end
-    end
-
-    if @score > 21 && values.include?('Ace')
-      @score -= 10
-    end
-    score
-  end
-
-  def bust?
-    score > Game::BLACKJACK_AMOUNT
-  end
-
-  def blackjack?
-    score == Game::BLACKJACK_AMOUNT
-  end
 end
+
 
 class Game
   attr_accessor :player, :dealer, :deck, :player_hand, :dealer_hand
@@ -111,7 +121,7 @@ class Game
 
   def initialize
     @player = Player.new(get_name)
-    @dealer = Player.new("Dealer")
+    @dealer = Dealer.new
     @deck = Deck.new(get_decks)
   end
 
@@ -143,6 +153,7 @@ class Game
     puts "Dealing".center(75)
     separation
     player.show_cards
+    separation
     dealer.hide_card
     separation
   end
@@ -188,8 +199,8 @@ class Game
         hit_or_stay
       end
 
-      if player.blackjack? == true
-        puts
+      if player.calculate == BLACKJACK_AMOUNT
+        puts "You got 21!"
         dealer_turn
       end
     end
@@ -231,6 +242,28 @@ class Game
     end 
   end
 
+  def blackjack_check(player, dealer)
+    if player.calculate == BLACKJACK_AMOUNT && dealer.calculate == BLACKJACK_AMOUNT
+      puts player.show_cards
+      puts dealer.show_cards
+      push
+    end
+    
+    if dealer.calculate == BLACKJACK_AMOUNT && player.calculate != BLACKJACK_AMOUNT
+      puts player.show_cards
+      puts dealer.show_cards
+      puts "Dealer got blackjack:"
+      lose
+    end    
+    
+    if player.calculate == BLACKJACK_AMOUNT && dealer.calculate != BLACKJACK_AMOUNT
+      puts player.show_cards
+      puts dealer.show_cards
+      puts "Blackjack!"
+      win
+    end
+  end
+
   def play_again
     puts "Do you want to play again?"
     puts "Enter 'yes'/'no'."
@@ -243,8 +276,8 @@ class Game
     
     if response == "yes"
       @play = true
-      player.discard
-      dealer.discard
+      player.hand = []
+      dealer.hand = []
       play
     else
       exit
@@ -255,20 +288,9 @@ class Game
     @play = true
     while @play == true
       deal_cards
-      if player.blackjack? == true
-        puts "Blackjack!"
-        win
-      else
-        hit_or_stay
-      end 
-
-      if dealer.blackjack? == true
-        dealer.show_cards
-        puts "Dealer got blackjack."
-        lose
-      else
-        dealer_turn
-      end
+      blackjack_check(player, dealer)
+      hit_or_stay
+      dealer_turn
       compare_hands   
     end 
   end  
